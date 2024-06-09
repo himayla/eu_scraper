@@ -67,7 +67,6 @@ def get_urls(dom):
 
     return urls
 
-
 def filter_urls(urls, df_old):
     old_urls = df_old['URL'].to_list()
     new_urls = [] 
@@ -86,7 +85,6 @@ def find_updates(old_urls, df_old):
         new_content = digital_init.convert_ini(dom, url)
 
         # Compare content of the dicts
-        # updated = {}
         for key in old_content:
             if old_content[key] != new_content[key]:
                 print(f"There's an update in column {key} of {old_content['Naam']}")
@@ -108,7 +106,7 @@ def main():
 
     urls = get_urls(dom)
     urls = urls[:20] # [:20] for testing
-
+    
     df_old = helpers.read_ini(helpers.output_file)
     print(f'Loaded the existing {len(df_old)} initiatives')
 
