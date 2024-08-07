@@ -8,7 +8,6 @@
 from bs4 import BeautifulSoup
 from contextlib import closing
 from datetime import datetime
-import digital_init
 import helpers
 import pandas as pd
 from requests import get
@@ -83,7 +82,7 @@ def get_content(urls):
 
     for url in urls:        
         dom = parse_url(url)
-        content = digital_init.convert_ini(dom, url)
+        content = convert_ini(dom, url)
         data.append(content)
     
     return data
