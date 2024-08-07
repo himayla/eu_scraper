@@ -1,11 +1,43 @@
+# main.py
+#
+# Mayla Kersten
+#
+# Program loads or updates the European digital initiatives to an Excel file.
+#
+
 from bs4 import BeautifulSoup
 from contextlib import closing
+from datetime import datetime
+import digital_init
+import helpers
 import pandas as pd
 from requests import get
 from requests.exceptions import RequestException
-import digital_init
-import helpers
-from datetime import datetime
+
+def convert_ini(dom, url):
+    "Function adapted specifically to scrapeEU initiatives for the theme 'A Europe Fit For the Digital Age'"
+
+    eu_title = dom.find("div", class_="d-flex flex-column mb-2").find("h2", class_="erpl_title-h2 mb-1 mb-md-0 mr-md-2 d-md-flex align-items-center").string
+
+    for section in dom.find_all("ul", class_="mb-3 p-0"):
+        for element in section.find_all("li", class_="d-flex"):
+            el = element.find("p", class_="col-6 font-weight-bold text-nowrap mr-lg-1 mb-0 px-0")
+            if el != None:
+                if el.string == "Type:":
+                    eu_type = el.find_next("p").string
+                    if eu_type in helpers.en_to_nl_type:
+                        eu_type = helpers.en_to_nl_type[eu_type]
+                if el.string == "Status:":
+                    eu_status = el.find_next("span").string
+                    if eu_status in helpers.en_to_nl_status:
+                        eu_status = helpers.en_to_nl_status[eu_status]
+        
+    return {
+        "Naam": eu_title,
+        "Type": eu_type,
+        "Status": eu_status,
+        "URL": url
+    }
 
 def simple_get(url):
     """
@@ -33,7 +65,7 @@ def is_good_response(resp):
 
 def parse_url(url):
     """
-    Returns DOM from HTML url
+    Returns Document Object Model (DOM) from HTML url
     """
     # Get raw HTML content
     html = simple_get(url)
@@ -68,7 +100,12 @@ def get_urls(dom):
     return urls
 
 def filter_urls(urls, df_old):
+    """
+    Returns lists with the urls on the website and urls in the existing Excel (which could be empty)    
+    """
+
     old_urls = df_old['URL'].to_list()
+
     new_urls = [] 
     for url in urls:
         if url not in old_urls:
@@ -76,11 +113,14 @@ def filter_urls(urls, df_old):
     return old_urls, new_urls
 
 def find_updates(old_urls, df_old):
+    """
+    Checks if any of the information from the website is updated and returns the updated DataFrame
+    """
+    df_old = df_old.drop(columns=["Toelichting", "Impact IenW"])
+
     for url in old_urls:
         # Find the row in the old df that matches the new url
-        # print(url)
         old_content = df_old.loc[df_old['URL'] == url].to_dict('records')[0]
-        # print(old_content)
         dom = parse_url(url)
         new_content = digital_init.convert_ini(dom, url)
 
@@ -88,44 +128,45 @@ def find_updates(old_urls, df_old):
         for key in old_content:
             if old_content[key] != new_content[key]:
                 print(f"There's an update in column {key} of {old_content['Naam']}")
+
                 # Overwrite the old_content
                 old_content[key] = new_content[key]
-            # else:
-            #     updated[key] = old_content[key]
         for key, value in old_content.items():
             df_old.loc[df_old['URL'] == url, key] = value
     return df_old
 
-
 def main():
     print(f"Start: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}")
-    
+
+    # Begin page
     EU_URL = "https://www.europarl.europa.eu/legislative-train/theme-a-europe-fit-for-the-digital-age/"
+    print(f"Loading the url: {EU_URL}")
 
     dom = parse_url(EU_URL)
 
     urls = get_urls(dom)
-    urls = urls[:20] # [:20] for testing
-    
+
     df_old = helpers.read_ini(helpers.output_file)
-    print(f'Loaded the existing {len(df_old)} initiatives')
+    print(f"Loaded the existing {len(df_old)} initiatives")
 
     old_urls, new_urls = filter_urls(urls, df_old)
-    print(f'Found {len(new_urls)} new initiative(s)')
+    print(f"Found {len(new_urls)} new initiative(s)")
 
     new_data = get_content(new_urls)
     df_new = pd.DataFrame(new_data, index=None)
 
-    print(f'Succesfully downloaded {len(df_new)} new initiatives')
+    # Temporarily store the manual columns and Name to reconnect
+    manual_cols = df_old[["Naam", "Toelichting", "Impact IenW"]]
 
-    print(f'Loaded {len(old_urls)} original initiatives')
-
+    print(f"Checking for updates in the {len(old_urls)} existing initiatives")
     df_old = find_updates(old_urls, df_old)
-    
-    df_final = pd.concat([df_old, df_new]).reset_index(drop=True)
-    print(df_final)
 
-    helpers.write_ini(df_final, helpers.output_file)
+    df_final = pd.concat([df_old, df_new]).reset_index(drop=True)
+
+    df_final_manunal = pd.merge(df_final, manual_cols, left_on="Naam", right_on="Naam", how="outer")
+    
+    helpers.write_ini(df_final_manunal, helpers.output_file)
+    print(f"Wrote out the {len(df_final_manunal)} initiatives to Excel")
 
     print(f'Finished at {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}')
 
