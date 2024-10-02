@@ -2,7 +2,7 @@
 #
 # Mayla Kersten
 #
-# Program loads or updates the European digital initiatives to an Excel file.
+# Program loads and updates European digital initiatives to an Excel file.
 #
 
 from bs4 import BeautifulSoup
@@ -14,8 +14,9 @@ from requests import get
 from requests.exceptions import RequestException
 
 def convert_ini(dom, url):
-    "Function adapted specifically to scrapeEU initiatives for the theme 'A Europe Fit For the Digital Age'"
-
+    """
+    Scrapes EU initiatives for the theme 'A Europe Fit For the Digital Age'
+    """
     eu_title = dom.find("div", class_="d-flex flex-column mb-2").find("h2", class_="erpl_title-h2 mb-1 mb-md-0 mr-md-2 d-md-flex align-items-center").string
 
     for section in dom.find_all("ul", class_="mb-3 p-0"):
@@ -102,7 +103,6 @@ def filter_urls(urls, df_old):
     """
     Returns lists with the urls on the website and urls in the existing Excel (which could be empty)    
     """
-
     old_urls = df_old['URL'].to_list()
 
     new_urls = [] 
@@ -121,7 +121,7 @@ def find_updates(old_urls, df_old):
         # Find the row in the old df that matches the new url
         old_content = df_old.loc[df_old['URL'] == url].to_dict('records')[0]
         dom = parse_url(url)
-        new_content = digital_init.convert_ini(dom, url)
+        new_content = convert_ini(dom, url)
 
         # Compare content of the dicts
         for key in old_content:
@@ -147,25 +147,32 @@ def main():
 
     df_old = helpers.read_ini(helpers.output_file)
     print(f"Loaded the existing {len(df_old)} initiatives")
-
+    
     old_urls, new_urls = filter_urls(urls, df_old)
     print(f"Found {len(new_urls)} new initiative(s)")
 
     new_data = get_content(new_urls)
-    df_new = pd.DataFrame(new_data, index=None)
+    df_new = pd.DataFrame(new_data)
 
-    # Temporarily store the manual columns and Name to reconnect
-    manual_cols = df_old[["Naam", "Toelichting", "Impact IenW"]]
+    # Temporarily store the manual columns and Naam to later reconnect to dataframe
+    manual_cols = df_old[["Toelichting", "Impact IenW", "URL"]]
 
     print(f"Checking for updates in the {len(old_urls)} existing initiatives")
     df_old = find_updates(old_urls, df_old)
 
-    df_final = pd.concat([df_old, df_new]).reset_index(drop=True)
+    df_final = pd.concat([df_old, df_new]) # FOUT HIER?
 
-    df_final_manunal = pd.merge(df_final, manual_cols, left_on="Naam", right_on="Naam", how="outer")
+    # Convert the 'URL' column to a categorical type with the custom order
+    print(f"Inserted the {len(new_urls)} new initiatives following the current order on the website")
+
+    df_final['URL_sort'] = df_final['URL'].apply(lambda x: urls.index(x) if x in urls else len(urls))
+    df_final = df_final.sort_values(by='URL_sort')
+    df_final = df_final.drop(columns=['URL_sort'])
+
+    df_final_manual = pd.merge(df_final, manual_cols, left_on="URL", right_on="URL", how="left")
     
-    helpers.write_ini(df_final_manunal, helpers.output_file)
-    print(f"Wrote out the {len(df_final_manunal)} initiatives to Excel")
+    helpers.write_ini(df_final_manual, helpers.output_file, csv=True)
+    print(f"Wrote out the {len(df_final_manual)} initiatives to Excel")
 
     print(f'Finished at {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}')
 
