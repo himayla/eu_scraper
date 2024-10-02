@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-output_file = 'Europese Digitaliseringsinitiatieven'
+output_file = 'output/Europese Digitaliseringsinitiatieven'
 
 en_to_nl_type = {
     "Non-Legislative": "Niet-regelgevend",
@@ -50,7 +50,5 @@ def write_ini(df, output_file, csv=False):
             group.index = np.arange(1, len(group) + 1)
             group.to_excel(writer, sheet_name=status_name, index=False)
 
-    
         df.to_excel(writer, sheet_name="Alle initiatieven")
-    
     
