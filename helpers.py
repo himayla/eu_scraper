@@ -25,7 +25,7 @@ def read_ini(filename):
         #df_ini = pd.read_csv("all_initiatives.csv")#, index=False) # Test instead of Alle ini, in CSV
 
     except:
-        df_ini = pd.DataFrame(columns=["Naam", "Toelichting", "Type", "Impact IenW", "Status", "URL"]) 
+        df_ini = pd.DataFrame(columns=["Naam", "Toelichting", "Type", "Impact IenW", "Status", "Details", "URL"]) 
     return df_ini
 
 def write_ini(df, output_file, csv=False):
@@ -36,7 +36,7 @@ def write_ini(df, output_file, csv=False):
     if csv:
         df.to_csv(f"{output_file}.csv",index=None)
 
-    df = df[['Naam', 'Toelichting', 'Type', 'Impact IenW', 'Status', 'URL']]
+    df = df[['Naam', 'Toelichting', 'Type', 'Impact IenW', 'Status', "Details", 'URL']]
 
     with pd.ExcelWriter(f"{output_file}.xlsx", engine='xlsxwriter') as writer:
         df.index = np.arange(1, len(df) + 1)

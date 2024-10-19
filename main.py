@@ -19,6 +19,8 @@ def convert_ini(dom, url):
     """
     eu_title = dom.find("div", class_="d-flex flex-column mb-2").find("h2", class_="erpl_title-h2 mb-1 mb-md-0 mr-md-2 d-md-flex align-items-center").string
 
+    eu_details = str(dom.find(id="legislativeTxt").find("div", class_="details"))
+
     for section in dom.find_all("ul", class_="mb-3 p-0"):
         for element in section.find_all("li", class_="d-flex"):
             el = element.find("p", class_="col-6 font-weight-bold text-nowrap mr-lg-1 mb-0 px-0")
@@ -36,6 +38,7 @@ def convert_ini(dom, url):
         "Naam": eu_title,
         "Type": eu_type,
         "Status": eu_status,
+        "Details": eu_details,
         "URL": url
     }
 
@@ -144,6 +147,8 @@ def main():
     dom = parse_url(EU_URL)
 
     urls = get_urls(dom)
+
+    urls = urls[:5] ## TESTING SAMPLE
 
     df_old = helpers.read_ini(helpers.output_file)
     print(f"Loaded the existing {len(df_old)} initiatives")
