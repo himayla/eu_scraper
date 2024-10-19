@@ -13,13 +13,19 @@ import pandas as pd
 from requests import get
 from requests.exceptions import RequestException
 
+log = {}
+
 def convert_ini(dom, url):
     """
     Scrapes EU initiatives for the theme 'A Europe Fit For the Digital Age'
     """
     eu_title = dom.find("div", class_="d-flex flex-column mb-2").find("h2", class_="erpl_title-h2 mb-1 mb-md-0 mr-md-2 d-md-flex align-items-center").string
 
-    eu_details = str(dom.find(id="legislativeTxt").find("div", class_="details"))
+    eu_details = dom.find(id="legislativeTxt").find("div", class_="details")
+    eu_details = ' '.join(i.text for i in eu_details)
+    # print(type(eu_details))
+    # for i in eu_details:
+    #     print(i.text)
 
     for section in dom.find_all("ul", class_="mb-3 p-0"):
         for element in section.find_all("li", class_="d-flex"):
@@ -118,6 +124,8 @@ def find_updates(old_urls, df_old):
     """
     Checks if any of the information from the website is updated and returns the updated DataFrame
     """
+    set_inis = set()
+    updated_cols = []
     df_old = df_old.drop(columns=["Toelichting", "Impact IenW"])
 
     for url in old_urls:
@@ -130,15 +138,26 @@ def find_updates(old_urls, df_old):
         for key in old_content:
             if old_content[key] != new_content[key]:
                 print(f"There's an update in column {key} of {old_content['Naam']}")
+                updated_cols.append(
+                    f"{old_content["Naam"]} - {key}")
+                set_inis.add(old_content["Naam"])
 
                 # Overwrite the old_content
                 old_content[key] = new_content[key]
         for key, value in old_content.items():
             df_old.loc[df_old['URL'] == url, key] = value
+    
+    log["# Updated initiatives"] = len(set_inis)
+    log["Updated initiatives"] = ', '.join(set_inis) if set_inis else None
+
+    log["# Updated columns"] = len(updated_cols)
+    log["Updated columns"] = ', '.join(updated_cols) if updated_cols else None
+
     return df_old
 
 def main():
     print(f"Start: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}")
+    log["Start"] = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
 
     # Begin page
     EU_URL = "https://www.europarl.europa.eu/legislative-train/theme-a-europe-fit-for-the-digital-age/"
@@ -148,38 +167,64 @@ def main():
 
     urls = get_urls(dom)
 
-    urls = urls[:5] ## TESTING SAMPLE
+    #urls = urls[:5] ## TESTING SAMPLE
 
-    df_old = helpers.read_ini(helpers.output_file)
-    print(f"Loaded the existing {len(df_old)} initiatives")
-    
-    old_urls, new_urls = filter_urls(urls, df_old)
+    df_ini, df_log = helpers.load()
+    print(f"Loaded the existing {len(df_ini)} initiatives")
+ 
+    old_urls, new_urls = filter_urls(urls, df_ini)
     print(f"Found {len(new_urls)} new initiative(s)")
-
+    log["# New initiatives"] = len(new_urls)
+    
     new_data = get_content(new_urls)
     df_new = pd.DataFrame(new_data)
 
     # Temporarily store the manual columns and Naam to later reconnect to dataframe
-    manual_cols = df_old[["Toelichting", "Impact IenW", "URL"]]
+    manual_cols = df_ini[["Toelichting", "Impact IenW", "URL"]]
 
     print(f"Checking for updates in the {len(old_urls)} existing initiatives")
-    df_old = find_updates(old_urls, df_old)
+    df_old = find_updates(old_urls, df_ini)
 
-    df_final = pd.concat([df_old, df_new]) # FOUT HIER?
+    df_final = pd.concat([df_old, df_new])
 
-    # Convert the 'URL' column to a categorical type with the custom order
     print(f"Inserted the {len(new_urls)} new initiatives following the current order on the website")
 
+    # Convert the 'URL' column to a categorical type with the custom order
     df_final['URL_sort'] = df_final['URL'].apply(lambda x: urls.index(x) if x in urls else len(urls))
     df_final = df_final.sort_values(by='URL_sort')
     df_final = df_final.drop(columns=['URL_sort'])
 
     df_final_manual = pd.merge(df_final, manual_cols, left_on="URL", right_on="URL", how="left")
-    
-    helpers.write_ini(df_final_manual, helpers.output_file, csv=True)
-    print(f"Wrote out the {len(df_final_manual)} initiatives to Excel")
+
+    # Reorder columns    
+    df_final = df_final_manual[['Naam', 'Toelichting', 'Type', 'Impact IenW', 'Status', "Details", 'URL']]
 
     print(f'Finished at {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}')
+    # runtime = datetime.now().strftime("%m/%d/%Y, %H:%M:%S") - log["Start"]
+    # print(runtime)
+
+    # Assuming log["Start"] is a string representing the start time
+    log_start_time = datetime.strptime(log["Start"], "%m/%d/%Y, %H:%M:%S")
+
+    # Get the current time
+    current_time = datetime.now()
+
+    # Calculate the runtime as a timedelta object
+    runtime = current_time - log_start_time
+
+    # Convert the runtime to minutes and seconds
+    minutes, seconds = divmod(runtime.total_seconds(), 60)
+
+    # Print the runtime in minutes and seconds
+    print(f"Runtime: {int(minutes)} minutes and {int(seconds)} seconds")
+    log["Runtime"] = f"{int(minutes)} minutes:{int(seconds)} seconds"
+
+    df_log = df_log._append(log, ignore_index=True)
+
+    print(df_log)
+
+    helpers.write(df_final, df_log)
+    print(f"Wrote out the {len(df_final_manual)} initiatives to Excel")
 
 if __name__ == '__main__':
     main()
