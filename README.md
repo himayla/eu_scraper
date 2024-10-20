@@ -13,3 +13,6 @@ The logic of the code is as follows:
 * Activate the virutal environment with `source venv/bin/activate`
 * Install the required packages with `pip install -r requirements.txt`
 * Run the program with `python main.py`
+
+# Code
+*parameters.json* - Contains 

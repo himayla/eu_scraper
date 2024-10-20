@@ -1,0 +1,51 @@
+{
+    "Status": {
+        "Announced": {
+            "Nederlands": "Aangekondigd",
+            "Colors": {
+                "Header": "#b3deff",
+                "Row": "#0171c0"
+            }
+        },
+        "Tabled": {
+            "Nederlands": "Ingediend",
+            "Colors": {
+                "Header": "#00b0f0",
+                "Row": "#b7ecff"
+            }
+        },
+        "Blocked": {
+            "Nederlands": "Geblokkeerd",
+            "Colors": {
+                "Header": "#ed7d31",
+                "Row": "#f8ceb2"
+            }
+        },
+        "Close to adoption": {
+            "Nederlands": "Bijna adoptie",
+            "Colors": {
+                "Header": "#ffc000",
+                "Row": "#fff2cc"
+            }
+        },
+        "Adopted / Completed": {
+            "Nederlands": "Aangenomen of Voltooid",
+            "Colors": {
+                "Header": "#00b050",
+                "Row": "##e1ffef"
+            }
+        },
+        "Withdrawn": {
+            "Nederlands": "Ingetrokken",
+            "Colors": {
+                "Header": "#ff0000",
+                "Row": "#ffcccc"
+            }
+        }
+    },
+    "Type": {
+        "Non-Legislative": {
+            "Nederlands": "Niet regelgevend"
+        }
+    }
+}

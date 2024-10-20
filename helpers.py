@@ -1,127 +1,93 @@
+# File contains helper functions for the EU_Scraper
+
 import numpy as np
 import pandas as pd
+import json
 
-target_file = "output/Europese Digitaliseringsinitiatieven.xlsx" 
+# Target file path
+TARGET_FILE = "output/Europese Digitaliseringsinitiatieven.xlsx"
 
-en_to_nl_type = {
-    "Non-Legislative": "Niet-regelgevend",
-}
+# Load translations from a JSON file
+TRANSLATIONS = json.load(open("translations.json"))
 
-en_to_nl_status = {
-    "Announced": "Aangekondigd",
-    "Tabled": "Ingediend",
-    "Blocked": "Geblokkeerd",
-    "Close to adoption": "Bijna adoptie",
-    "Adopted / Completed": "Aangenomen of Voltooid",
-    "Withdrawn": "Ingetrokken"
-}
-
-colors = {
-    "Aangekondigd": {
-        "Header": "#b3deff",
-        "Row": "#0171c0"
-    },
-    "Ingediend": {
-        "Header": "#00b0f0",
-        "Row": "#b7ecff"
-    },
-    "Geblokkeerd": {
-        "Header": "#ed7d31",
-        "Row": "#f8ceb2"
-    },
-    "Bijna adoptie": {
-        "Header": "#ffc000",
-        "Row": "#fff2cc"
-    },
-    "Aangenomen of Voltooid": {
-        "Header": "#00b050",
-        "Row": "##e1ffef"
-    },
-    "Ingetrokken": {
-        "Header": "#ff0000",
-        "Row": "#ffcccc"
-    }
-}
-
-def load():
+def load_initiatives():
     """
-    """
-    df_ini = load_ini()
-    df_log = load_log()
-
-    return df_ini, df_log
-
-def load_ini():
-    """
-    Reads the existing initiatives and returns it as a DataFrame.
-    """
-    try:
-        df_ini = pd.read_excel(target_file, sheet_name="Alle initiatieven", index_col=0)
-    except:
-        df_ini = pd.DataFrame(columns=["Naam", "Toelichting", "Type", "Impact IenW", "Status", "Details", "URL"]) 
-    return df_ini
-
-def load_log():
-    """
-    """
-    try:
-        df_log = pd.read_excel(target_file, sheet_name="Log", index_col=0)
-    except:
-        df_log = pd.DataFrame()#columns=["Start", "# New Initiatives", "# Updated Columns", "Updated columns", "Runtime"])
-
-    return df_log
-
-def write(df_ini, df_log):
-
-    with pd.ExcelWriter(target_file, engine='xlsxwriter') as writer:
-        write_ini(df_ini, writer)
-
-        df_log.to_excel(writer, sheet_name="Log")
+    Loads the saved initiatives and logs from an Excel file. 
+    If the file or sheet does not exist, it returns empty DataFrames.
     
+    Returns:
+        df_initiatives (DataFrame): DataFrame containing the initiatives.
+        df_log (DataFrame): DataFrame containing the log.
+    """
+    try:
+        df_initiatives = pd.read_excel(TARGET_FILE, sheet_name="Alle initiatieven", index_col=0)
+        df_log = pd.read_excel(TARGET_FILE, sheet_name="Log", index_col=0)
+    except FileNotFoundError:
+        df_initiatives = pd.DataFrame(columns=["Naam", "Toelichting", "Type", "Impact IenW", "Status", "Details", "URL"])
+        df_log = pd.DataFrame()
+    
+    return df_initiatives, df_log
+
+def write_to_excel(df_initiatives, df_log):
+    """
+    Writes the updated initiatives and log to the target Excel file.
+    
+    Args:
+        df_initiatives (DataFrame): DataFrame containing the initiatives to write.
+        df_log (DataFrame): DataFrame containing the log to write.
+    """
+    with pd.ExcelWriter(TARGET_FILE, engine='xlsxwriter') as writer:
+        write_initiatives(df_initiatives, writer)
+        df_initiatives.to_excel(writer, sheet_name="Alle initiatieven")
+        df_log.to_excel(writer, sheet_name="Log")
+
 
 def highlight_alternate_rows(row):
     """
-    """
-    return ['background-color: white' if row.name % 2 != 0 else f'background-color: {colors[row.Status]["Row"]}' for _ in row]
+    Applies alternating row coloring based on the row index.
+    
+    Args:
+        row (Series): The row of the DataFrame being styled.
 
-def write_ini(df, writer):
+    Returns:
+        List[str]: A list of background colors for each cell in the row.
     """
-    Writes the updated information to an CSV, Excel and per sheet.
-    """
+    return ['background-color: white' if row.name % 2 != 0 else f'background-color: {TRANSLATIONS["Status"][row["Status"]]["Colors"]["Row"]}' for _ in row]
 
-    # Temp copy
+def write_initiatives(df, writer):
+    """
+    Writes the initiatives DataFrame to multiple Excel sheets, grouped by 'Status', 
+    and applies specific styling and formatting.
+
+    Args:
+        df (DataFrame): The initiatives DataFrame to write.
+        writer (ExcelWriter): The Excel writer object for writing to the file.
+    """
+    # Create a temporary DataFrame with selected columns
     df_temp = df[['Naam', 'Toelichting', 'Type', 'Impact IenW', "Status", "URL"]]
 
-    # Create hyperlinks
-    #df_temp['Naam'] = df_temp.apply(lambda row: f'=HYPERLINK("{row["URL"]}", "{row["Naam"]}")', axis=1)
-
+    # Create hyperlinks in the "Naam" column and remove the column
     df_temp.loc[:, 'Naam'] = df_temp.apply(lambda row: f'=HYPERLINK("{row["URL"]}", "{row["Naam"]}")', axis=1)
-
     df_temp = df_temp.drop(columns=['URL'])
 
-    # header_style = {'selector': 'thead th', 
-    #                 'props': [('background-color', 'darkblue'), ('color', 'white')]}
+    for status_name, group in df_temp.groupby("Status"):
+        nl_status = TRANSLATIONS["Status"][status_name]["Nederlands"]
 
-
-    for status_name, group in df_temp.groupby("Status", observed=False):
-
+        # Re-index from 1
         group.index = np.arange(1, len(group) + 1)
 
-
-        # COLORED ROWS
+        # Apply alternating row colors
         styled_group = group.style.apply(highlight_alternate_rows, axis=1)
 
-        styled_group.to_excel(writer, sheet_name=status_name,startrow=1, header=False)
+        # Write to Excel sheet with the Dutch status as the sheet name
+        styled_group.to_excel(writer, sheet_name=nl_status, startrow=1, columns=["Naam", "Toelichting", "Type", "Impact IenW"], header=False)
 
-        # COLORED HEADER
-                
-        # Add format
+        # Format the header row with the specified color
         header_format = writer.book.add_format({
-            'fg_color': colors[status_name]["Header"]
+            'fg_color': TRANSLATIONS["Status"][status_name]["Colors"]["Header"]
         })
 
         for col_num, value in enumerate(styled_group.columns.values):
-            writer.sheets[status_name].write(0, col_num + 1, value, header_format)
-
-        df.to_excel(writer, sheet_name="Alle initiatieven")
-    
+            if value != "Status":
+                writer.sheets[nl_status].write(0, col_num + 1, value, header_format)
+        
