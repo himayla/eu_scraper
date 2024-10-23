@@ -3,12 +3,27 @@
 import numpy as np
 import pandas as pd
 import json
+import sys
+import os
 
 # Target file path
 TARGET_FILE = "output/Europese Digitaliseringsinitiatieven.xlsx"
 
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for both dev and PyInstaller """
+    try:
+        # PyInstaller stores bundled files in a temporary folder at runtime
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Use the current working directory during development
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
+
 # Load translations from a JSON file
-TRANSLATIONS = json.load(open("translations.json"))
+TRANSLATIONS = json.load(open(resource_path('translations.json')))
 
 def load_initiatives():
     """
@@ -20,8 +35,8 @@ def load_initiatives():
         df_log (DataFrame): DataFrame containing the log.
     """
     try:
-        df_initiatives = pd.read_excel(TARGET_FILE, sheet_name="Alle initiatieven", index_col=0)
-        df_log = pd.read_excel(TARGET_FILE, sheet_name="Log", index_col=0)
+        df_initiatives = pd.read_excel(resource_path(TARGET_FILE), sheet_name="Alle initiatieven", index_col=0)
+        df_log = pd.read_excel(resource_path(TARGET_FILE), sheet_name="Log", index_col=0)
     except FileNotFoundError:
         df_initiatives = pd.DataFrame(columns=["Naam", "Toelichting", "Type", "Impact IenW", "Status", "Details", "URL"])
         df_log = pd.DataFrame()
@@ -36,7 +51,7 @@ def write_to_excel(df_initiatives, df_log):
         df_initiatives (DataFrame): DataFrame containing the initiatives to write.
         df_log (DataFrame): DataFrame containing the log to write.
     """
-    with pd.ExcelWriter(TARGET_FILE, engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(resource_path(TARGET_FILE), engine='xlsxwriter') as writer:
         write_initiatives(df_initiatives, writer)
         df_initiatives.to_excel(writer, sheet_name="Alle initiatieven")
         df_log.to_excel(writer, sheet_name="Log")

@@ -3,8 +3,8 @@
         "Announced": {
             "Nederlands": "Aangekondigd",
             "Colors": {
-                "Header": "#b3deff",
-                "Row": "#0171c0"
+                "Header": "#0171c0",
+                "Row": "#b3deff"
             }
         },
         "Tabled": {
@@ -25,14 +25,14 @@
             "Nederlands": "Bijna adoptie",
             "Colors": {
                 "Header": "#ffc000",
-                "Row": "#fff2cc"
+                "Row": "#fff4d1"
             }
         },
         "Adopted / Completed": {
             "Nederlands": "Aangenomen of Voltooid",
             "Colors": {
                 "Header": "#00b050",
-                "Row": "##e1ffef"
+                "Row": "#e1ffef"
             }
         },
         "Withdrawn": {
