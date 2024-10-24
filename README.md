@@ -7,17 +7,16 @@ The European Digital Initiatives Tracker is a Python program designed to scrape,
 The logic of the code is as follows:
 ![Data Flow](./documentation/dataflow.png)
 
+## Run the program
+1. Check if you are in the correct directory
+2. Run `python3 main.py`
+
 ## Getting Started
 1. Clone the repository with: `git clone https://github.com/himayla/eu_scraper.git`
 2. Create a virtual environment: `python -m venv venv` or `python3 -m venv venv` 
 3. Activate the virtual environment: `source venv/bin/activate`
 4. Install the reqiured packages: `pip install -r requirements.txt` 
 5. Run the program: `python main.py` or `python3 main.py`
-
-## Package
-If changes were made in the code the standalone package has to be rebuilt:
-1. `pip install pyinstaller`
-2. `pyinstaller --noconfirm main.spec`
 
 ## Code
 * **parameters.json** - Contains configuration parameters for the program, such as settings for the scraping process.
