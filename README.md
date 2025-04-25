@@ -9,7 +9,9 @@ The logic of the code is as follows:
 
 ## Run the program
 1. Check if you are in the correct directory
-2. Run `python3 main.py`
+2. Activate the `source venv/bin/activate`
+3. Run `python3 main.py`
+4. Result in output/
 
 ## Getting Started
 1. Clone the repository with: `git clone https://github.com/himayla/eu_scraper.git`

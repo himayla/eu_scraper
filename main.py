@@ -14,7 +14,11 @@ from requests import get
 from requests.exceptions import RequestException
 
 # URL for European Digital Initiatives
-EU_URL = "https://www.europarl.europa.eu/legislative-train/theme-a-europe-fit-for-the-digital-age/"
+BASE_URL = "https://www.europarl.europa.eu/legislative-train/"
+
+THEME = "theme-a-new-plan-for-europe-s-sustainable-prosperity-and-competitiveness"
+
+EU_URL = f"{BASE_URL}{THEME}"
 
 log = {}
 
