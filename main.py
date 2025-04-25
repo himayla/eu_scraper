@@ -13,7 +13,6 @@ import pandas as pd
 from requests import get
 from requests.exceptions import RequestException
 
-# URL for European Digital Initiatives
 BASE_URL = "https://www.europarl.europa.eu/legislative-train/"
 
 THEME = "theme-a-new-plan-for-europe-s-sustainable-prosperity-and-competitiveness"
