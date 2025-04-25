@@ -19,6 +19,8 @@ THEME = "theme-a-new-plan-for-europe-s-sustainable-prosperity-and-competitivenes
 
 EU_URL = f"{BASE_URL}{THEME}"
 
+TARGET_FILENAME = "Europese initiatieven.xlsx"
+
 log = {}
 
 def convert_ini(dom, url):
@@ -233,7 +235,7 @@ def main():
     # urls = urls[:10]  # For testing, limit the sample size
 
     # Load existing initiatives from Excel
-    df_ini, df_log = helpers.load_initiatives()
+    df_ini, df_log = helpers.load_initiatives(f"output/{TARGET_FILENAME}")
     print(f"Loaded {len(df_ini)} existing initiatives")
 
     # Filter URLs and find new initiatives
@@ -269,9 +271,8 @@ def main():
     print(f"Finished at {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
     log_runtime()
 
-
     # Write out the final data
-    helpers.write_to_excel(df_final, df_log)
+    helpers.write_to_excel(df_final, df_log, f"output/{TARGET_FILENAME}")
     print(f"Wrote out {len(df_final)} initiatives to Excel")
 if __name__ == '__main__':
     main()
